@@ -109,23 +109,39 @@ document.addEventListener("DOMContentLoaded", function () {
         configFileInput.click();
     });
 
-    saveConfigButton.addEventListener("click", function () {
-        const config = {
-            images: Array.from(document.querySelectorAll(".image-container img")).map(img => ({
-                src: img.src,
-                name: img.alt,
-                listened: img.dataset.listened
-            }))
-        };
-        const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "tierlist-config.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    });
+    
+saveConfigButton.addEventListener("click", function () {
+    const config = {
+        images: Array.from(document.querySelectorAll(".image-container img")).map(img => ({
+            src: img.src,
+            name: img.alt,
+            listened: img.dataset.listened
+        })),
+        tiers: {
+            S: getImagesInTier("tier-s"),
+            A: getImagesInTier("tier-a"),
+            B: getImagesInTier("tier-b"),
+            C: getImagesInTier("tier-c")
+        }
+    };
 
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "tierlist-config.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+});
+
+function getImagesInTier(tierId) {
+    const tier = document.getElementById(tierId);
+    return Array.from(tier.querySelectorAll(".drop-zone img")).map(img => ({
+        src: img.src,
+        name: img.alt,
+        listened: img.dataset.listened
+    }));
+}
     configFileInput.addEventListener("change", function () {
         const file = configFileInput.files[0];
         if (!file) return;
@@ -138,16 +154,35 @@ document.addEventListener("DOMContentLoaded", function () {
         reader.readAsText(file);
     });
 
-    function restoreConfiguration(config) {
-        uploadedImages.innerHTML = "";
-        document.querySelectorAll(".drop-zone").forEach(zone => zone.innerHTML = "");
+    
+  function restoreConfiguration(config) {
+    uploadedImages.innerHTML = "";
+    document.querySelectorAll(".drop-zone").forEach(zone => zone.innerHTML = "");
 
-        config.images.forEach(image => {
+    // Restore uploaded images
+    config.images.forEach(image => {
+        createImageElement(image.src, image.name);
+        const imgElement = uploadedImages.lastChild.querySelector("img");
+        imgElement.dataset.listened = image.listened;
+        imgElement.classList.toggle("listened", imgElement.dataset.listened === "true");
+    });
+
+    // Restore tiers
+    Object.keys(config.tiers).forEach(tierId => {
+        const tierImages = config.tiers[tierId];
+        const tier = document.getElementById(`tier-${tierId.toLowerCase()}`);
+        const dropZone = tier.querySelector(".drop-zone");
+
+        tierImages.forEach(image => {
             createImageElement(image.src, image.name);
             const imgElement = uploadedImages.lastChild.querySelector("img");
             imgElement.dataset.listened = image.listened;
             imgElement.classList.toggle("listened", imgElement.dataset.listened === "true");
+
+            // Move image to the correct drop zone (tier)
+            dropZone.appendChild(imgElement.parentElement);
         });
-    }
+    });
+  }
 });
 
