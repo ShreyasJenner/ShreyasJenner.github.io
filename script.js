@@ -6,29 +6,28 @@ document.addEventListener("DOMContentLoaded", function () {
     const configFileInput = document.getElementById("config-file-input");
     const searchInput = document.getElementById("search-input");
     let selectedImages = new Set();
+    let uploadedImageMap = new Map(); // Track uploaded images by name
+
+    // Add click handler for load button
+    loadConfigButton.addEventListener("click", function() {
+        configFileInput.click(); // This triggers the file input
+    });
 
     fileInput.addEventListener("change", function () {
         const files = fileInput.files;
         Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                createImageElement(e.target.result, file.name);
-            };
-            reader.readAsDataURL(file);
-        });
-    });
-
-    searchInput.addEventListener("input", function () {
-        const query = searchInput.value.toLowerCase();
-        const images = document.querySelectorAll(".image-container");
-        images.forEach(imageContainer => {
-            const imageName = imageContainer.querySelector("img").alt.toLowerCase();
-            if (imageName.includes(query)) {
-                imageContainer.style.display = "inline-block"; // Show matching images
+            // Check if image with same name already exists
+            if (!uploadedImageMap.has(file.name)) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    createImageElement(e.target.result, file.name);
+                };
+                reader.readAsDataURL(file);
             } else {
-                imageContainer.style.display = "none"; // Hide non-matching images
+                console.log(`Image "${file.name}" already exists`);
             }
         });
+        fileInput.value = ''; // Clear the input after processing
     });
 
     function createImageElement(src, name) {
@@ -50,23 +49,115 @@ document.addEventListener("DOMContentLoaded", function () {
         removeButton.classList.add("remove-button");
         removeButton.innerText = "✖";
         removeButton.addEventListener("click", function () {
+            uploadedImageMap.delete(name); // Remove from tracking map
             container.remove();
         });
         
         const tooltip = document.createElement("div");
         tooltip.classList.add("tooltip");
         tooltip.innerText = name;
-        container.appendChild(tooltip);
         
+        container.appendChild(tooltip);
         container.appendChild(img);
         container.appendChild(removeButton);
         uploadedImages.appendChild(container);
+
+        // Add to tracking map
+        uploadedImageMap.set(name, {
+            container: container,
+            src: src,
+            listened: false
+        });
 
         container.addEventListener("mouseenter", function () {
             tooltip.style.visibility = "visible";
         });
         container.addEventListener("mouseleave", function () {
             tooltip.style.visibility = "hidden";
+        });
+    }
+
+    function clearAllTiers() {
+        document.querySelectorAll(".drop-zone").forEach(zone => {
+            while (zone.firstChild) {
+                // Move images back to uploaded images section before clearing
+                const imgContainer = zone.firstChild;
+                uploadedImages.appendChild(imgContainer);
+            }
+        });
+    }
+
+    saveConfigButton.addEventListener("click", function () {
+        const config = {
+            tiers: {
+                S: getImagesInTier("tier-s"),
+                A: getImagesInTier("tier-a"),
+                B: getImagesInTier("tier-b"),
+                C: getImagesInTier("tier-c")
+            }
+        };
+
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "tierlist-config.json";
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+
+    function getImagesInTier(tierId) {
+        const tier = document.getElementById(tierId);
+        return Array.from(tier.querySelectorAll(".drop-zone img")).map(img => ({
+            src: img.src,
+            name: img.alt,
+            listened: img.dataset.listened === 'true'
+        }));
+    }
+
+    configFileInput.addEventListener("change", function () {
+        const file = configFileInput.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const config = JSON.parse(e.target.result);
+                restoreConfiguration(config);
+            } catch (error) {
+                console.error("Error loading configuration:", error);
+                alert("Error loading configuration file. Please make sure it's a valid JSON file.");
+            }
+        };
+        reader.readAsText(file);
+        configFileInput.value = ''; // Clear the input after loading
+    });
+
+    function restoreConfiguration(config) {
+        // Don't clear the uploaded images, just their tier assignments
+        clearAllTiers();
+
+        // Process each tier
+        Object.entries(config.tiers).forEach(([tierId, images]) => {
+            const tier = document.getElementById(`tier-${tierId.toLowerCase()}`);
+            const dropZone = tier.querySelector(".drop-zone");
+
+            images.forEach(image => {
+                // If the image doesn't exist in our map yet, create it
+                if (!uploadedImageMap.has(image.name)) {
+                    createImageElement(image.src, image.name);
+                }
+                
+                // Get the image container (either existing or newly created)
+                const imageData = uploadedImageMap.get(image.name);
+                if (imageData) {
+                    const imgElement = imageData.container.querySelector('img');
+                    // Update listened status
+                    imgElement.dataset.listened = image.listened;
+                    imgElement.classList.toggle("listened", image.listened);
+                    // Move to appropriate tier
+                    dropZone.appendChild(imageData.container);
+                }
+            });
         });
     }
 
@@ -105,84 +196,16 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    loadConfigButton.addEventListener("click", function () {
-        configFileInput.click();
-    });
-
-    
-saveConfigButton.addEventListener("click", function () {
-    const config = {
-        images: Array.from(document.querySelectorAll(".image-container img")).map(img => ({
-            src: img.src,
-            name: img.alt,
-            listened: img.dataset.listened
-        })),
-        tiers: {
-            S: getImagesInTier("tier-s"),
-            A: getImagesInTier("tier-a"),
-            B: getImagesInTier("tier-b"),
-            C: getImagesInTier("tier-c")
-        }
-    };
-
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "tierlist-config.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-});
-
-function getImagesInTier(tierId) {
-    const tier = document.getElementById(tierId);
-    return Array.from(tier.querySelectorAll(".drop-zone img")).map(img => ({
-        src: img.src,
-        name: img.alt,
-        listened: img.dataset.listened
-    }));
-}
-    configFileInput.addEventListener("change", function () {
-        const file = configFileInput.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            const config = JSON.parse(e.target.result);
-            restoreConfiguration(config);
-        };
-        reader.readAsText(file);
-    });
-
-    
-  function restoreConfiguration(config) {
-    uploadedImages.innerHTML = "";
-    document.querySelectorAll(".drop-zone").forEach(zone => zone.innerHTML = "");
-
-    // Restore uploaded images
-    config.images.forEach(image => {
-        createImageElement(image.src, image.name);
-        const imgElement = uploadedImages.lastChild.querySelector("img");
-        imgElement.dataset.listened = image.listened;
-        imgElement.classList.toggle("listened", imgElement.dataset.listened === "true");
-    });
-
-    // Restore tiers
-    Object.keys(config.tiers).forEach(tierId => {
-        const tierImages = config.tiers[tierId];
-        const tier = document.getElementById(`tier-${tierId.toLowerCase()}`);
-        const dropZone = tier.querySelector(".drop-zone");
-
-        tierImages.forEach(image => {
-            createImageElement(image.src, image.name);
-            const imgElement = uploadedImages.lastChild.querySelector("img");
-            imgElement.dataset.listened = image.listened;
-            imgElement.classList.toggle("listened", imgElement.dataset.listened === "true");
-
-            // Move image to the correct drop zone (tier)
-            dropZone.appendChild(imgElement.parentElement);
+    // Search functionality
+    searchInput.addEventListener("input", function () {
+        const query = searchInput.value.toLowerCase();
+        uploadedImageMap.forEach((data, name) => {
+            const container = data.container;
+            if (name.toLowerCase().includes(query)) {
+                container.style.display = "inline-block";
+            } else {
+                container.style.display = "none";
+            }
         });
     });
-  }
 });
-
