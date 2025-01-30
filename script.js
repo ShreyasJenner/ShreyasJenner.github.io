@@ -6,29 +6,71 @@ document.addEventListener("DOMContentLoaded", function () {
     const configFileInput = document.getElementById("config-file-input");
     const searchInput = document.getElementById("search-input");
     let selectedImages = new Set();
-    let uploadedImageMap = new Map(); // Track uploaded images by name
+    let uploadedImageMap = new Map();
 
     // Add click handler for load button
     loadConfigButton.addEventListener("click", function() {
-        configFileInput.click(); // This triggers the file input
+        configFileInput.click();
     });
 
-    fileInput.addEventListener("change", function () {
+    fileInput.addEventListener("change", async function () {
         const files = fileInput.files;
-        Array.from(files).forEach(file => {
-            // Check if image with same name already exists
+        for (const file of files) {
             if (!uploadedImageMap.has(file.name)) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    createImageElement(e.target.result, file.name);
-                };
-                reader.readAsDataURL(file);
+                try {
+                    // Convert to compressed base64
+                    const compressedBase64 = await compressImage(file);
+                    createImageElement(compressedBase64, file.name);
+                } catch (error) {
+                    console.error("Error processing image:", error);
+                    alert(`Error processing image ${file.name}`);
+                }
             } else {
                 console.log(`Image "${file.name}" already exists`);
             }
-        });
-        fileInput.value = ''; // Clear the input after processing
+        }
+        fileInput.value = '';
     });
+
+    // Image compression function
+    async function compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Max dimension
+                    const MAX_DIMENSION = 800;
+                    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                        if (width > height) {
+                            height = (height / width) * MAX_DIMENSION;
+                            width = MAX_DIMENSION;
+                        } else {
+                            width = (width / height) * MAX_DIMENSION;
+                            height = MAX_DIMENSION;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Compress image
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                    resolve(compressedBase64);
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
 
     function createImageElement(src, name) {
         const container = document.createElement("div");
@@ -49,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
         removeButton.classList.add("remove-button");
         removeButton.innerText = "✖";
         removeButton.addEventListener("click", function () {
-            uploadedImageMap.delete(name); // Remove from tracking map
+            uploadedImageMap.delete(name);
             container.remove();
         });
         
@@ -62,7 +104,6 @@ document.addEventListener("DOMContentLoaded", function () {
         container.appendChild(removeButton);
         uploadedImages.appendChild(container);
 
-        // Add to tracking map
         uploadedImageMap.set(name, {
             container: container,
             src: src,
@@ -77,33 +118,37 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    function clearAllTiers() {
-        document.querySelectorAll(".drop-zone").forEach(zone => {
-            while (zone.firstChild) {
-                // Move images back to uploaded images section before clearing
-                const imgContainer = zone.firstChild;
-                uploadedImages.appendChild(imgContainer);
-            }
-        });
-    }
-
     saveConfigButton.addEventListener("click", function () {
-        const config = {
-            tiers: {
-                S: getImagesInTier("tier-s"),
-                A: getImagesInTier("tier-a"),
-                B: getImagesInTier("tier-b"),
-                C: getImagesInTier("tier-c")
-            }
-        };
+        try {
+            const config = {
+                tiers: {
+                    S: getImagesInTier("tier-s"),
+                    A: getImagesInTier("tier-a"),
+                    B: getImagesInTier("tier-b"),
+                    C: getImagesInTier("tier-c")
+                }
+            };
 
-        const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "tierlist-config.json";
-        a.click();
-        URL.revokeObjectURL(a.href);
+            // Split into chunks if needed
+            const jsonStr = JSON.stringify(config);
+            downloadConfig(jsonStr, "tierlist-config.json");
+        } catch (error) {
+            console.error("Error saving configuration:", error);
+            alert("Error saving configuration. The file might be too large.");
+        }
     });
+
+    function downloadConfig(jsonStr, filename) {
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 
     function getImagesInTier(tierId) {
         const tier = document.getElementById(tierId);
@@ -119,48 +164,53 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!file) return;
         
         const reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = async function (e) {
             try {
                 const config = JSON.parse(e.target.result);
-                restoreConfiguration(config);
+                await restoreConfiguration(config);
             } catch (error) {
                 console.error("Error loading configuration:", error);
-                alert("Error loading configuration file. Please make sure it's a valid JSON file.");
+                alert("Error loading configuration file. Please make sure it's a valid JSON file and not too large.");
             }
         };
         reader.readAsText(file);
-        configFileInput.value = ''; // Clear the input after loading
+        configFileInput.value = '';
     });
 
-    function restoreConfiguration(config) {
-        // Don't clear the uploaded images, just their tier assignments
+    async function restoreConfiguration(config) {
         clearAllTiers();
 
         // Process each tier
-        Object.entries(config.tiers).forEach(([tierId, images]) => {
+        for (const [tierId, images] of Object.entries(config.tiers)) {
             const tier = document.getElementById(`tier-${tierId.toLowerCase()}`);
             const dropZone = tier.querySelector(".drop-zone");
 
-            images.forEach(image => {
-                // If the image doesn't exist in our map yet, create it
+            for (const image of images) {
                 if (!uploadedImageMap.has(image.name)) {
                     createImageElement(image.src, image.name);
                 }
                 
-                // Get the image container (either existing or newly created)
                 const imageData = uploadedImageMap.get(image.name);
                 if (imageData) {
                     const imgElement = imageData.container.querySelector('img');
-                    // Update listened status
                     imgElement.dataset.listened = image.listened;
                     imgElement.classList.toggle("listened", image.listened);
-                    // Move to appropriate tier
                     dropZone.appendChild(imageData.container);
                 }
-            });
+            }
+        }
+    }
+
+    function clearAllTiers() {
+        document.querySelectorAll(".drop-zone").forEach(zone => {
+            while (zone.firstChild) {
+                const imgContainer = zone.firstChild;
+                uploadedImages.appendChild(imgContainer);
+            }
         });
     }
 
+    // Existing event handlers remain the same
     function toggleSelection(event) {
         const img = event.target;
         if (selectedImages.has(img)) {
@@ -182,21 +232,20 @@ document.addEventListener("DOMContentLoaded", function () {
         event.dataTransfer.setData("text/plain", "dragging");
     }
 
-    document.querySelectorAll(".drop-zone").forEach(zone => {
-        zone.addEventListener("dragover", function (event) {
-            event.preventDefault();
-        });
-        zone.addEventListener("drop", function (event) {
-            event.preventDefault();
-            selectedImages.forEach(img => {
-                zone.appendChild(img.parentElement);
-                img.classList.remove("selected");
-            });
-            selectedImages.clear();
+    // Add click event to tiers to move selected images
+    document.querySelectorAll(".tier").forEach(tier => {
+        tier.addEventListener("click", function (event) {
+            if (selectedImages.size > 0) {
+                const dropZone = tier.querySelector(".drop-zone");
+                selectedImages.forEach(img => {
+                    dropZone.appendChild(img.parentElement);
+                    img.classList.remove("selected");
+                });
+                selectedImages.clear();
+            }
         });
     });
 
-    // Search functionality
     searchInput.addEventListener("input", function () {
         const query = searchInput.value.toLowerCase();
         uploadedImageMap.forEach((data, name) => {
