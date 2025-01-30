@@ -210,8 +210,9 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Existing event handlers remain the same
+    // Updated toggleSelection function to stop event propagation
     function toggleSelection(event) {
+        event.stopPropagation(); // Stop event propagation
         const img = event.target;
         if (selectedImages.has(img)) {
             selectedImages.delete(img);
