@@ -1,0 +1,19 @@
+title: "Shreyas George Jenner"
+description: "Developer & Designer"
+baseurl: ""
+url: "https://shreyasjenner.github.io"
+
+author:
+  name: Shreyas George Jenner 
+  email: shreyasjenner@proton.me
+  github: ShreyasJenner 
+  linkedin: shreyasjenner/ 
+
+permalink: /blog/:year/:month/:day/:title/
+
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+markdown: kramdown
+highlighter: rouge

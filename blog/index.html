@@ -1,0 +1,24 @@
+---
+layout: default
+title: Blog
+---
+<div class="blog-index">
+  <div class="container">
+    <div class="blog-index-header">
+      <p class="section-label">Writing</p>
+      <h1 class="section-title">All Posts</h1>
+    </div>
+    {% if site.posts.size > 0 %}
+    <ul class="post-list">
+      {% for post in site.posts %}
+      <li class="post-list-item">
+        <span class="post-list-date">{{ post.date | date: "%b %-d, %Y" }}</span>
+        <span class="post-list-title"><a href="{{ post.url | relative_url }}">{{ post.title }}</a></span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p style="color: var(--ink-muted)">No posts yet. Add a Markdown file to <code>_posts/</code> to publish your first one.</p>
+    {% endif %}
+  </div>
+</div>

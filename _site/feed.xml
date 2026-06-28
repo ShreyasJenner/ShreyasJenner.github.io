@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-06-28T08:04:51+05:30</updated><id>http://localhost:4000/feed.xml</id><title type="html">Shreyas George Jenner</title><subtitle>Developer &amp; Designer</subtitle><author><name>Shreyas George Jenner</name><email>shreyasjenner@proton.me</email></author><entry><title type="html">Hello, World!</title><link href="http://localhost:4000/blog/2026/06/28/hello-world/" rel="alternate" type="text/html" title="Hello, World!" /><published>2026-06-28T00:00:00+05:30</published><updated>2026-06-28T00:00:00+05:30</updated><id>http://localhost:4000/blog/2026/06/28/hello-world</id><content type="html" xml:base="http://localhost:4000/blog/2026/06/28/hello-world/"><![CDATA[<p>Welcome to my blog! This is where I’ll write about cool things that I’m building.</p>
+
+<h2 id="what-to-expect">What to expect</h2>
+
+<p>I plan to write about:</p>
+
+<ul>
+  <li>Projects I’m working on and lessons learned along the way</li>
+  <li>My thoughts or opinions on different tools and technologies.</li>
+</ul>
+
+<h2 id="why-blog-at-all">Why blog at all?</h2>
+
+<p>I got inspired by reading a blog by one of my friends. It’s also a fun way for me to inform people of the cool stuff that I’m working on.</p>
+
+<hr />]]></content><author><name>Shreyas George Jenner</name><email>shreyasjenner@proton.me</email></author><category term="meta" /><category term="writing" /><summary type="html"><![CDATA[The start of my blog.]]></summary></entry></feed>

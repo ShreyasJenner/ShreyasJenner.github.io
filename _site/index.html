@@ -1,9 +1,30 @@
----
-layout: default
-title: Home
----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home — Shreyas George Jenner</title>
+  <meta name="description" content="Developer & Designer" />
+  <link rel="stylesheet" href="/assets/css/main.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <nav class="site-nav">
+  <div class="container nav-inner">
+    <a href="/" class="nav-logo">Shreyas George Jenner</a>
+    <button class="nav-toggle" aria-label="Toggle menu">&#9776;</button>
+    <ul class="nav-links">
+      <li><a href="/#projects">Projects</a></li>
+      <li><a href="/#skills">Skills</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="/#contact">Contact</a></li>
+    </ul>
+  </div>
+</nav>
 
-<!-- Intro -->
+  <main>
+    <!-- Intro -->
 <section class="hero">
   <div class="container">
     <div class="hero-inner">
@@ -105,22 +126,16 @@ title: Home
     <p class="section-label">Writing</p>
     <h2 class="section-title">From the blog</h2>
     <div class="blog-grid">
-      {% for post in site.posts limit:3 %}
-      <a href="{{ post.url | relative_url }}" class="blog-card">
-        <span class="blog-date">{{ post.date | date: "%b %-d, %Y" }}</span>
-        <h3>{{ post.title }}</h3>
-        <p>{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
+      
+      <a href="/blog/2026/06/28/hello-world/" class="blog-card">
+        <span class="blog-date">Jun 28, 2026</span>
+        <h3>Hello, World!</h3>
+        <p>The start of my blog.</p>
         <span class="read-more">Read post →</span>
       </a>
-      {% else %}
-      <p style="color: var(--ink-muted)">No posts yet — add a file to <code>_posts/</code> to get started.</p>
-      {% endfor %}
+      
     </div>
-    {% if site.posts.size > 3 %}
-    <div class="blog-more">
-      <a href="{{ '/blog' | relative_url }}" class="btn btn-ghost">All posts →</a>
-    </div>
-    {% endif %}
+    
   </div>
 </section>
 
@@ -150,17 +165,37 @@ title: Home
         <p>Open to collaborating on interesting projects, full-time roles, and fun conversations. 
         If you want to get in touch with me or just check out the stuff I've done, I've put the links down below.</p>
         <ul class="contact-links">
-          {% if site.author.email %}
-          <li><a href="mailto:{{ site.author.email }}">{{ site.author.email }}</a></li>
-          {% endif %}
-          {% if site.author.github %}
-          <li><a href="https://github.com/{{ site.author.github }}" target="_blank">github.com/{{ site.author.github }}</a></li>
-          {% endif %}
-          {% if site.author.linkedin %}
-          <li><a href="https://linkedin.com/in/{{ site.author.linkedin }}" target="_blank">LinkedIn</a></li>
-          {% endif %}
+          
+          <li><a href="mailto:shreyasjenner@proton.me">shreyasjenner@proton.me</a></li>
+          
+          
+          <li><a href="https://github.com/ShreyasJenner" target="_blank">github.com/ShreyasJenner</a></li>
+          
+          
+          <li><a href="https://linkedin.com/in/shreyasjenner/" target="_blank">LinkedIn</a></li>
+          
         </ul>
       </div>
     </div>
   </div>
 </section>
+
+  </main>
+  <footer class="site-footer">
+  <div class="container footer-inner">
+    <p>&copy; 2026 Shreyas George Jenner</p>
+    <ul class="footer-links">
+      
+        <li><a href="https://github.com/ShreyasJenner" target="_blank">GitHub</a></li>
+      
+      
+        <li><a href="https://linkedin.com/in/shreyasjenner/" target="_blank">LinkedIn</a></li>
+      
+      
+    </ul>
+  </div>
+</footer>
+
+  <script src="/assets/js/main.js"></script>
+</body>
+</html>
